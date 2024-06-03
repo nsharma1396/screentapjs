@@ -9,7 +9,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/nsharma1396/screentapjs"
+		"url": "git+https://github.com/nsharma1396/screentapjs.git"
 	},
 	"engines": {
 		"node": ">=14"
