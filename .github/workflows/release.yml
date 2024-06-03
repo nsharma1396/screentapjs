@@ -2,7 +2,7 @@ name: Build & Publish Binary Node
 
 on:
   release:
-    types: [published, prereleased]
+    types: [published]
 
 concurrency:
   group: ${{ github.head_ref || github.run_id }}
@@ -17,10 +17,9 @@ jobs:
         os:
           - windows-latest
         host:
-          - arm64
+          - x64
         target:
           - x64
-          - arm64
         node:
           - 18
           - 16
