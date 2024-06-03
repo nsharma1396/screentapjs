@@ -124,7 +124,9 @@ jobs:
           path: build/stage/*/*
           retention-days: 7
   publish:
-    needs: build
+    needs:
+      - build-windows
+      - build-darwin
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
