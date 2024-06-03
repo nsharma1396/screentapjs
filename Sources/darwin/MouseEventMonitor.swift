@@ -2,6 +2,8 @@ import Cocoa
 
 var jsCallback: ((String, Int) -> Void)?
 
+print("hello there")
+
 @_cdecl("startMouseMonitor")
 public func startMouseMonitor(callback: @escaping (String, Int) -> Void) {
     jsCallback = callback

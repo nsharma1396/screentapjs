@@ -26,11 +26,12 @@
               "sources/macos/MouseEventMonitor.swift"
             ],
             "xcode_settings": {
-              "OTHER_SWIFT_FLAGS": [
-                "-import-objc-header",
-                "sources/macos/bridge.h"
+              "GCC_ENABLE_CPP_EXCEPTIONS": "YES",
+              "CLANG_CXX_LIBRARY": "libc++",
+              "CLANG_CXX_LANGUAGE_STANDARD": "c++11",
+              "OTHER_LDFLAGS": [
+                "-framework", "Cocoa"
               ],
-              "SWIFT_VERSION": "5.0",
               "MACOSX_DEPLOYMENT_TARGET": "10.15"
             }
           }
