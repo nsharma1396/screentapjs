@@ -1,6 +1,6 @@
 {
 	"name": "screentap",
-	"version": "0.0.4",
+	"version": "0.0.5",
 	"description": "Get event on current active screen change",
 	"license": "MIT",
 	"author": {
@@ -36,11 +36,10 @@
 		"install": "node-pre-gyp install --fallback-to-build"
 	},
 	"files": [
-		"index.js",
-		"index.d.ts",
 		"lib",
 		"main",
-		"Sources/windows/main.cc",
+		"Sources",
+		"index.d.ts",
 		"binding.gyp"
 	],
 	"keywords": [
