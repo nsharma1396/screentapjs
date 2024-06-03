@@ -16,6 +16,7 @@ static HWINEVENTHOOK hMoveSizeEndHook;
 
 std::thread nativeThread;
 Napi::ThreadSafeFunction tsfn;
+std::atomic<bool> keepRunning(false);
 
 struct MouseData {
   HMONITOR hMonitor;
@@ -89,6 +90,8 @@ LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam) {
 Napi::Value startHook(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
 
+  keepRunning.store(true); // signal the thread to start
+
   Napi::Function callback = info[0].As<Napi::Function>();
   tsfn = Napi::ThreadSafeFunction::New(env, callback, "MouseHookJsCb", 0, 1);
 
@@ -101,7 +104,7 @@ Napi::Value startHook(const Napi::CallbackInfo& info) {
     if (hMouseHook == NULL) {
       std::cerr << "Failed to set mouse hook!" << std::endl;
     }
-    while (GetMessage(&msg, NULL, 0, 0)) {
+    while (keepRunning.load() && GetMessage(&msg, NULL, 0, 0)) {
       TranslateMessage(&msg);
       DispatchMessage(&msg);
     }
@@ -129,6 +132,14 @@ Napi::Value stopHook(const Napi::CallbackInfo& info) {
     }
     hMoveSizeEndHook = NULL;
   }
+
+  keepRunning.store(false); // signal the thread to stop
+
+  // wait for the thread to finish
+  if (nativeThread.joinable()) {
+    PostThreadMessage(GetThreadId(nativeThread.native_handle()), WM_QUIT, 0, 0); // ensure GetMessage exits
+    nativeThread.join();
+  }  
   return Napi::Boolean::New(env, true);
 }
 

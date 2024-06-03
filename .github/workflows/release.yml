@@ -1,4 +1,4 @@
-name: Build & Publish Binary Node
+name: Build & Publish Binaries
 
 on:
   release:
