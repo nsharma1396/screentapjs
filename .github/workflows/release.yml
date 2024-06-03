@@ -17,9 +17,10 @@ jobs:
         os:
           - windows-latest
         host:
-          - x64
+          - arm64
         target:
           - x64
+          - arm64
         node:
           - 18
           - 16

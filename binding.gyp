@@ -22,8 +22,8 @@
           "OS=='mac'",
           {
             "sources": [
-              "sources/macos/main.cc",
-              "sources/macos/MouseEventMonitor.swift"
+              "sources/darwin/main.cc",
+              "sources/darwin/MouseEventMonitor.swift"
             ],
             "xcode_settings": {
               "GCC_ENABLE_CPP_EXCEPTIONS": "YES",
