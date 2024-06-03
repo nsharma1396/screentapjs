@@ -96,11 +96,10 @@ jobs:
 
       - uses: actions/setup-python@v3
         with:
-          python-version: "3.x"
-          cache: "pip"
+          python-version: "3.11"
 
-      - name: Add distutils
-        run: pip install setuptools
+      # - name: Add distutils
+      #   run: pip install setuptools
 
       - name: Setup node (node=${{ matrix.node }}, host=${{ matrix.host }})
         uses: actions/setup-node@v3
