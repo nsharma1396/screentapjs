@@ -2,7 +2,7 @@ name: Build & Publish Binary Node
 
 on:
   release:
-    types: [published]
+    types: [published, prereleased]
 
 concurrency:
   group: ${{ github.head_ref || github.run_id }}

@@ -18,9 +18,41 @@ jobs:
           - 16
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      # - uses: actions/setup-node@v3
+      #   with:
+      #     node-version: ${{ matrix.node-version }}
+      - uses: actions/setup-python@v3
         with:
-          node-version: ${{ matrix.node-version }}
+          python-version: "3.x"
+          cache: "pip"
+
+      - name: Setup node (node=${{ matrix.node }}, host=${{ matrix.host }})
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node }}
+          architecture: ${{ matrix.host }}
+
+      - name: Install dependencies
+        run: npm install --ignore-scripts
+
+      - name: Add env vars
+        shell: bash
+        run: |
+          echo "V=1" >> $GITHUB_ENV
+          echo "TARGET=${{ matrix.target }}" >> $GITHUB_ENV
+
+      - name: Configure build
+        run: ./node_modules/.bin/node-pre-gyp configure --target_arch=${{ env.TARGET }}
+
+      - name: Build binaries
+        run: ./node_modules/.bin/node-pre-gyp build --target_arch=${{ env.TARGET }}
+
+      - name: Package prebuilt binaries
+        run: ./node_modules/.bin/node-pre-gyp package --target_arch=${{ env.TARGET }}
+
+      - name: Add distutils
+        run: pip install setuptools
+
       - run: npm install --ignore-scripts
-      - run: npm run build:macos
+      # - run: npm run build:macos
       # - run: npm run test-ci
