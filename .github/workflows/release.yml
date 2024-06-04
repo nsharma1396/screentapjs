@@ -40,10 +40,6 @@ jobs:
           node-version: ${{ matrix.node }}
           architecture: ${{ matrix.host }}
 
-      - name: get-npm-version
-        id: package-version
-        uses: martinbeentjes/npm-get-version-action@v1.3.1
-
       - name: Install dependencies
         run: npm install --ignore-scripts
 
@@ -52,6 +48,7 @@ jobs:
         run: |
           echo "V=1" >> $GITHUB_ENV
           echo "TARGET=${{ matrix.target }}" >> $GITHUB_ENV
+          echo "PACKAGE_VERSION=$(node -p -e \"require('./package.json').version\")" >> $GITHUB_ENV
 
       - name: Configure build
         run: ./node_modules/.bin/node-pre-gyp configure --target_arch=${{ env.TARGET }}
@@ -67,7 +64,7 @@ jobs:
         uses: actions/upload-artifact@v3
         if: matrix.node == 18
         with:
-          name: v${{ steps.package-version.outputs.current-version}}
+          name: v${{ env.PACKAGE_VERSION }}
           path: build/stage/*/*
           retention-days: 7
 
@@ -101,10 +98,6 @@ jobs:
           node-version: ${{ matrix.node }}
           architecture: ${{ matrix.host }}
 
-      - name: get-npm-version
-        id: package-version
-        uses: martinbeentjes/npm-get-version-action@v1.3.1
-
       - name: Install dependencies
         run: npm install --ignore-scripts
 
@@ -113,6 +106,7 @@ jobs:
         run: |
           echo "V=1" >> $GITHUB_ENV
           echo "TARGET=${{ matrix.target }}" >> $GITHUB_ENV
+          echo "PACKAGE_VERSION=$(node -p -e \"require('./package.json').version\")" >> $GITHUB_ENV
 
       - name: Configure build
         run: ./node_modules/.bin/node-pre-gyp configure --target_arch=${{ env.TARGET }}
@@ -128,7 +122,7 @@ jobs:
         uses: actions/upload-artifact@v3
         if: matrix.node == 18
         with:
-          name: v${{ steps.package-version.outputs.current-version}}
+          name: v${{ env.PACKAGE_VERSION }}
           path: build/stage/*/*
           retention-days: 7
   publish:
