@@ -40,6 +40,10 @@ jobs:
           node-version: ${{ matrix.node }}
           architecture: ${{ matrix.host }}
 
+      - name: get-npm-version
+        id: package-version
+        uses: martinbeentjes/npm-get-version-action@v1.3.1
+
       - name: Install dependencies
         run: npm install --ignore-scripts
 
@@ -63,7 +67,7 @@ jobs:
         uses: actions/upload-artifact@v3
         if: matrix.node == 18
         with:
-          name: prebuilt-windows-binaries
+          name: v${{ steps.package-version.outputs.current-version}}
           path: build/stage/*/*
           retention-days: 7
 
@@ -97,6 +101,10 @@ jobs:
           node-version: ${{ matrix.node }}
           architecture: ${{ matrix.host }}
 
+      - name: get-npm-version
+        id: package-version
+        uses: martinbeentjes/npm-get-version-action@v1.3.1
+
       - name: Install dependencies
         run: npm install --ignore-scripts
 
@@ -120,7 +128,7 @@ jobs:
         uses: actions/upload-artifact@v3
         if: matrix.node == 18
         with:
-          name: prebuilt-darwin-binaries
+          name: v${{ steps.package-version.outputs.current-version}}
           path: build/stage/*/*
           retention-days: 7
   publish:
@@ -137,21 +145,19 @@ jobs:
         with:
           node-version: 18
 
-      - name: get-npm-version
-        id: package-version
-        uses: martinbeentjes/npm-get-version-action@v1.3.1
-
       - name: Download all artifacts
         uses: actions/download-artifact@v3
         with:
           name: prebuilt-windows-binaries
-          path: build/stage/v${{ steps.package-version.outputs.current-version}}
+          path: build/stage/
+          merge-multiple: true
 
       - name: Download all artifacts
         uses: actions/download-artifact@v3
         with:
           name: prebuilt-darwin-binaries
-          path: build/stage/v${{ steps.package-version.outputs.current-version}}
+          path: build/stage/
+          merge-multiple: true
 
       - name: Install dependencies
         run: npm install --ignore-scripts
