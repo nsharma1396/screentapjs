@@ -137,17 +137,21 @@ jobs:
         with:
           node-version: 18
 
+      - name: get-npm-version
+        id: package-version
+        uses: martinbeentjes/npm-get-version-action@v1.3.1
+
       - name: Download all artifacts
         uses: actions/download-artifact@v3
         with:
           name: prebuilt-windows-binaries
-          path: build/stage/*/*
+          path: build/stage/v${{ steps.package-version.outputs.current-version}}
 
       - name: Download all artifacts
         uses: actions/download-artifact@v3
         with:
           name: prebuilt-darwin-binaries
-          path: build/stage/*/*
+          path: build/stage/v${{ steps.package-version.outputs.current-version}}
 
       - name: Install dependencies
         run: npm install --ignore-scripts
