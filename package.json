@@ -1,6 +1,6 @@
 {
 	"name": "screentap",
-	"version": "0.0.5",
+	"version": "0.0.6",
 	"description": "Get event on current active screen change",
 	"license": "MIT",
 	"author": {
