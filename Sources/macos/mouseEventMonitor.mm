@@ -2,9 +2,10 @@
 #include <cstdio>
 #include <thread>
 
+id monitor;
+id selfMonitor;
+
 Napi::ThreadSafeFunction tsfn;
-CFRunLoopRef runLoop;
-CFRunLoopSourceRef runLoopSource;
 std::thread nativeThread;
 
 struct EventData {
@@ -19,45 +20,44 @@ auto callback = [](Napi::Env env, Napi::Function jsCallback,
   delete eventData;
 };
 
-CGEventRef mouseEventCallback(CGEventTapProxy proxy, CGEventType type,
-                              CGEventRef event) {
+void handleMouseEvent(NSEvent *event) {
   EventData *eventData = new EventData();
-  switch (type) {
-  case kCGEventLeftMouseDown:
+  switch (event.type) {
+  case NSEventTypeLeftMouseDown:
     eventData->eventName = new std::string("leftMouseDown");
     break;
-  case kCGEventLeftMouseUp:
+  case NSEventTypeLeftMouseUp:
     eventData->eventName = new std::string("leftMouseUp");
     break;
-  case kCGEventRightMouseDown:
+  case NSEventTypeRightMouseDown:
     eventData->eventName = new std::string("rightMouseDown");
     break;
-  case kCGEventRightMouseUp:
+  case NSEventTypeRightMouseUp:
     eventData->eventName = new std::string("rightMouseUp");
     break;
   default:
     break;
   }
-
-  if (eventData->eventName == nullptr) {
-    return event;
+  if (!eventData->eventName) {
+    delete eventData;
+    return;
   }
+  NSPoint locationInWindow = [event locationInWindow];
+  NSRect locationRectInWindow =
+      NSMakeRect(locationInWindow.x, locationInWindow.y, 0, 0);
+  NSRect locationRectInScreen =
+      [[event window] convertRectToScreen:locationRectInWindow];
+  NSPoint locationInScreen = locationRectInScreen.origin;
+  CGDirectDisplayID display;
+  uint32_t matchingDisplayCount;
+  CGGetDisplaysWithPoint(locationInScreen, 1, &display, &matchingDisplayCount);
 
-  CGEventRef eventRef = CGEventCreate(NULL);
-  if (eventRef) {
-    CGPoint currentMouseLocation = CGEventGetLocation(eventRef);
-    CFRelease(eventRef);
-
-    CGDirectDisplayID display;
-
-    CGGetDisplaysWithPoint(currentMouseLocation, 1, &display, NULL);
-
+  if (matchingDisplayCount > 0) {
     eventData->displayId = display;
+  } else {
+    eventData->displayId = 0;
   }
-
   tsfn.NonBlockingCall(eventData, callback);
-
-  return event;
 }
 
 void startMouseMonitor(Napi::Env env, Napi::Function windowCallback) {
@@ -66,37 +66,36 @@ void startMouseMonitor(Napi::Env env, Napi::Function windowCallback) {
       Napi::ThreadSafeFunction::New(env, windowCallback, "MouseMonitor", 0, 1);
 
   nativeThread = std::thread([]() {
-    CGEventMask eventMask =
-        (1 << kCGEventLeftMouseDown) | (1 << kCGEventLeftMouseUp) |
-        (1 << kCGEventRightMouseDown) | (1 << kCGEventRightMouseUp);
-    CFMachPortRef eventTap = CGEventTapCreate(
-        kCGHIDEventTap, kCGHeadInsertEventTap, kCGEventTapOptionDefault,
-        eventMask, (CGEventTapCallBack)mouseEventCallback, NULL);
-
-    if (!eventTap) {
-      printf("Failed to create event tap");
-      exit(1);
-    }
-
-    runLoopSource =
-        CFMachPortCreateRunLoopSource(kCFAllocatorDefault, eventTap, 0);
-    runLoop = CFRunLoopGetCurrent();
-    CFRunLoopAddSource(runLoop, runLoopSource, kCFRunLoopCommonModes);
-    CGEventTapEnable(eventTap, true);
-    CFRunLoopRun();
+    NSEventMask eventMask = NSEventMaskLeftMouseDown | NSEventMaskLeftMouseUp |
+                            NSEventMaskRightMouseDown | NSEventMaskRightMouseUp;
+    monitor = [NSEvent addGlobalMonitorForEventsMatchingMask:eventMask
+                                                     handler:^(NSEvent *event) {
+                                                       handleMouseEvent(event);
+                                                     }];
+    selfMonitor =
+        [NSEvent addLocalMonitorForEventsMatchingMask:eventMask
+                                              handler:^(NSEvent *event) {
+                                                handleMouseEvent(event);
+                                                return event;
+                                              }];
+    [[NSRunLoop currentRunLoop] run];
   });
 }
 
 void stopMouseMonitor() {
-  if (runLoop) {
-    CFRunLoopStop(runLoop);
-    if (runLoopSource) {
-      CFRelease(runLoopSource);
-      runLoopSource = nullptr;
-    }
-
-    if (nativeThread.joinable()) {
-      nativeThread.join();
-    }
+  bool monitorRemoved = false;
+  bool selfMonitorRemoved = false;
+  if (monitor) {
+    [NSEvent removeMonitor:monitor];
+    monitorRemoved = true;
+    monitor = nil;
+  }
+  if (selfMonitor) {
+    [NSEvent removeMonitor:selfMonitor];
+    selfMonitorRemoved = true;
+    selfMonitor = nil;
+  }
+  if (monitorRemoved && selfMonitorRemoved && nativeThread.joinable()) {
+    nativeThread.join();
   }
 }

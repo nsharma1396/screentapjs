@@ -26,7 +26,7 @@
               "sources/macos/mouseEventMonitor.mm",
               "sources/macos/mouseEventMonitor.h"
             ],
-            "libraries": ["-framework CoreFoundation"]
+            "libraries": ["-framework AppKit"]
           }
         ]
       ],

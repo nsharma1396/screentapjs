@@ -6,12 +6,13 @@ Napi::Value StartHook(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
   Napi::Function callback = info[0].As<Napi::Function>();
   startMouseMonitor(env, callback);
-  return env.Undefined();
+  return Napi::Boolean::New(env, true);
 }
 
 Napi::Value StopHook(const Napi::CallbackInfo &info) {
+  Napi::Env env = info.Env();
   stopMouseMonitor();
-  return info.Env().Undefined();
+  return Napi::Boolean::New(env, true);
 }
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
