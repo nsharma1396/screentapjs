@@ -25,7 +25,6 @@ struct MouseData {
 
 struct ThreadInfo {
   DWORD id;
-  std::condition_variable hasId;
 };
 
 ThreadInfo threadInfo;
@@ -108,10 +107,8 @@ Napi::Value startHook(const Napi::CallbackInfo &info) {
   tsfn = Napi::ThreadSafeFunction::New(env, callback, "MouseHookJsCb", 0, 1);
 
   // create a native thread
-  nativeThread = std::thread([std::ref(threadInfo)](ThreadInfo &threadInfo) {
-    // save thread data
+  nativeThread = std::thread([]() {
     threadInfo.id = GetCurrentThreadId();
-    threadInfo.hasId.notify_one();
 
     MSG msg;
     hMouseHook = SetWindowsHookEx(WH_MOUSE_LL, MouseProc, NULL, 0);
@@ -128,36 +125,39 @@ Napi::Value startHook(const Napi::CallbackInfo &info) {
       TranslateMessage(&msg);
       DispatchMessage(&msg);
     }
+
+    // cleanup on thread exit
+    if (!keepRunning.load()) {
+      if (hMouseHook != NULL) {
+        if (!UnhookWindowsHookEx(hMouseHook)) {
+          std::cout << "Failed to unhook mouse hook!" << std::endl;
+        }
+        hMouseHook = NULL;
+      }
+      if (hForegroundHook != NULL) {
+        if (!UnhookWinEvent(hForegroundHook)) {
+          std::cout << "Failed to unhook foreground window hook!" << std::endl;
+        }
+        hForegroundHook = NULL;
+      }
+      if (hMoveSizeEndHook != NULL) {
+        if (!UnhookWinEvent(hMoveSizeEndHook)) {
+          std::cout << "Failed to unhook move size end hook!" << std::endl;
+        }
+        hMoveSizeEndHook = NULL;
+      }
+    }
   });
   return Napi::Boolean::New(env, true);
 }
 
 Napi::Value stopHook(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
-  if (hMouseHook != NULL) {
-    if (!UnhookWindowsHookEx(hMouseHook)) {
-      std::cout << "Failed to unhook mouse hook!" << std::endl;
-    }
-    hMouseHook = NULL;
-  }
-  if (hForegroundHook != NULL) {
-    if (!UnhookWinEvent(hForegroundHook)) {
-      std::cout << "Failed to unhook foreground window hook!" << std::endl;
-    }
-    hForegroundHook = NULL;
-  }
-  if (hMoveSizeEndHook != NULL) {
-    if (!UnhookWinEvent(hMoveSizeEndHook)) {
-      std::cout << "Failed to unhook move size end hook!" << std::endl;
-    }
-    hMoveSizeEndHook = NULL;
-  }
 
   keepRunning.store(false); // signal the thread to stop
 
   // wait for the thread to finish
-  if (nativeThread.joinable()) {
-    threadInfo.hasId.wait();
+  if (nativeThread.joinable() && threadInfo.id != 0) {
     PostThreadMessage(threadInfo.id, WM_QUIT, 0, 0); // ensure GetMessage exits
     nativeThread.join();
   }
