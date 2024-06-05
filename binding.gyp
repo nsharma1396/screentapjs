@@ -22,18 +22,11 @@
           "OS=='mac'",
           {
             "sources": [
-              "sources/darwin/main.cc",
-              "sources/darwin/MouseEventMonitor.swift"
+              "sources/macos/main.mm",
+              "sources/macos/mouseEventMonitor.mm",
+              "sources/macos/mouseEventMonitor.h"
             ],
-            "xcode_settings": {
-              "GCC_ENABLE_CPP_EXCEPTIONS": "YES",
-              "CLANG_CXX_LIBRARY": "libc++",
-              "CLANG_CXX_LANGUAGE_STANDARD": "c++11",
-              "OTHER_LDFLAGS": [
-                "-framework", "Cocoa"
-              ],
-              "MACOSX_DEPLOYMENT_TARGET": "10.15"
-            }
+            "libraries": ["-framework CoreFoundation"]
           }
         ]
       ],

@@ -1,7 +1,7 @@
-#include <napi.h>
-#include <thread>
 #include <iostream>
+#include <napi.h>
 #include <string>
+#include <thread>
 #include <windows.h>
 
 #define LEFT_MOUSEDOWN "leftMouseDown"
@@ -23,11 +23,18 @@ struct MouseData {
   std::string event;
 };
 
-auto callback = [](Napi::Env env, Napi::Function jsCallback, MouseData* data) {
-  jsCallback.Call({
-    Napi::String::New(env, data->event),
-    Napi::Number::New(env, static_cast<double>(reinterpret_cast<intptr_t>(data->hMonitor)))
-  });
+struct ThreadInfo {
+  DWORD id;
+  std::condition_variable hasId;
+};
+
+ThreadInfo threadInfo;
+
+auto callback = [](Napi::Env env, Napi::Function jsCallback, MouseData *data) {
+  jsCallback.Call(
+      {Napi::String::New(env, data->event),
+       Napi::Number::New(env, static_cast<double>(reinterpret_cast<intptr_t>(
+                                  data->hMonitor)))});
   delete data;
 };
 
@@ -36,11 +43,14 @@ HMONITOR GetMonitorFromPoint(POINT pt) {
   return MonitorFromPoint(pt, MONITOR_DEFAULTTONEAREST);
 }
 
-void CALLBACK win_event_proc(HWINEVENTHOOK hook, DWORD event, HWND hwnd, LONG idObject, LONG idChild, DWORD dwEventThread, DWORD dwmsEventTime) {
+void CALLBACK win_event_proc(HWINEVENTHOOK hook, DWORD event, HWND hwnd,
+                             LONG idObject, LONG idChild, DWORD dwEventThread,
+                             DWORD dwmsEventTime) {
   if (event == EVENT_SYSTEM_FOREGROUND || event == EVENT_SYSTEM_MOVESIZEEND) {
-    MouseData* data = new MouseData();
+    MouseData *data = new MouseData();
     data->event = FOREGROUND_WINDOW_UPDATED;
-    if (hwnd == NULL || !IsWindow(hwnd) || !IsWindowVisible(hwnd) || !IsWindowEnabled(hwnd)) {
+    if (hwnd == NULL || !IsWindow(hwnd) || !IsWindowVisible(hwnd) ||
+        !IsWindowEnabled(hwnd)) {
       data->hMonitor = NULL;
       POINT pt;
       if (GetCursorPos(&pt)) {
@@ -60,34 +70,36 @@ void CALLBACK win_event_proc(HWINEVENTHOOK hook, DWORD event, HWND hwnd, LONG id
 // Mouse hook callback function
 LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam) {
   if (nCode >= 0) {
-    bool isMouseClickEvent = wParam == WM_LBUTTONDOWN || wParam == WM_LBUTTONUP || wParam == WM_RBUTTONDOWN || wParam == WM_RBUTTONUP;
+    bool isMouseClickEvent = wParam == WM_LBUTTONDOWN ||
+                             wParam == WM_LBUTTONUP ||
+                             wParam == WM_RBUTTONDOWN || wParam == WM_RBUTTONUP;
     if (!isMouseClickEvent) {
       return CallNextHookEx(hMouseHook, nCode, wParam, lParam);
     }
     PMSLLHOOKSTRUCT pMouseStruct = (PMSLLHOOKSTRUCT)lParam;
     HMONITOR hMonitor = GetMonitorFromPoint(pMouseStruct->pt);
-    MouseData* data = new MouseData();
+    MouseData *data = new MouseData();
     data->hMonitor = hMonitor;
     switch (wParam) {
-      case WM_LBUTTONDOWN:
-          data->event = LEFT_MOUSEDOWN;
-          break;
-      case WM_LBUTTONUP:
-          data->event = LEFT_MOUSEUP;
-          break;
-      case WM_RBUTTONDOWN:
-          data->event = RIGHT_MOUSEDOWN; 
-          break;
-      case WM_RBUTTONUP:
-          data->event = RIGHT_MOUSEUP;
-          break;
+    case WM_LBUTTONDOWN:
+      data->event = LEFT_MOUSEDOWN;
+      break;
+    case WM_LBUTTONUP:
+      data->event = LEFT_MOUSEUP;
+      break;
+    case WM_RBUTTONDOWN:
+      data->event = RIGHT_MOUSEDOWN;
+      break;
+    case WM_RBUTTONUP:
+      data->event = RIGHT_MOUSEUP;
+      break;
     }
     tsfn.NonBlockingCall(data, callback);
   }
   return CallNextHookEx(hMouseHook, nCode, wParam, lParam);
 }
 
-Napi::Value startHook(const Napi::CallbackInfo& info) {
+Napi::Value startHook(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
 
   keepRunning.store(true); // signal the thread to start
@@ -96,11 +108,19 @@ Napi::Value startHook(const Napi::CallbackInfo& info) {
   tsfn = Napi::ThreadSafeFunction::New(env, callback, "MouseHookJsCb", 0, 1);
 
   // create a native thread
-  nativeThread = std::thread([]() {
+  nativeThread = std::thread([std::ref(threadInfo)](ThreadInfo &threadInfo) {
+    // save thread data
+    threadInfo.id = GetCurrentThreadId();
+    threadInfo.hasId.notify_one();
+
     MSG msg;
     hMouseHook = SetWindowsHookEx(WH_MOUSE_LL, MouseProc, NULL, 0);
-    hForegroundHook = SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND, NULL, win_event_proc, 0, 0, WINEVENT_OUTOFCONTEXT);
-    hMoveSizeEndHook = SetWinEventHook(EVENT_SYSTEM_MOVESIZEEND, EVENT_SYSTEM_MOVESIZEEND, NULL, win_event_proc, 0, 0, WINEVENT_OUTOFCONTEXT);
+    hForegroundHook =
+        SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND, NULL,
+                        win_event_proc, 0, 0, WINEVENT_OUTOFCONTEXT);
+    hMoveSizeEndHook =
+        SetWinEventHook(EVENT_SYSTEM_MOVESIZEEND, EVENT_SYSTEM_MOVESIZEEND,
+                        NULL, win_event_proc, 0, 0, WINEVENT_OUTOFCONTEXT);
     if (hMouseHook == NULL) {
       std::cerr << "Failed to set mouse hook!" << std::endl;
     }
@@ -112,7 +132,7 @@ Napi::Value startHook(const Napi::CallbackInfo& info) {
   return Napi::Boolean::New(env, true);
 }
 
-Napi::Value stopHook(const Napi::CallbackInfo& info) {
+Napi::Value stopHook(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
   if (hMouseHook != NULL) {
     if (!UnhookWindowsHookEx(hMouseHook)) {
@@ -137,15 +157,18 @@ Napi::Value stopHook(const Napi::CallbackInfo& info) {
 
   // wait for the thread to finish
   if (nativeThread.joinable()) {
-    PostThreadMessage(GetThreadId(nativeThread.native_handle()), WM_QUIT, 0, 0); // ensure GetMessage exits
+    threadInfo.hasId.wait();
+    PostThreadMessage(threadInfo.id, WM_QUIT, 0, 0); // ensure GetMessage exits
     nativeThread.join();
-  }  
+  }
   return Napi::Boolean::New(env, true);
 }
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
-  exports.Set(Napi::String::New(env, "start"), Napi::Function::New(env, startHook));
-  exports.Set(Napi::String::New(env, "stop"), Napi::Function::New(env, stopHook));
+  exports.Set(Napi::String::New(env, "start"),
+              Napi::Function::New(env, startHook));
+  exports.Set(Napi::String::New(env, "stop"),
+              Napi::Function::New(env, stopHook));
   return exports;
 }
 

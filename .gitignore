@@ -10,3 +10,5 @@ lib/binding
 
 .node_pre_gyprc
 c_cpp_properties.json
+
+*.node

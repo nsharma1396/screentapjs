@@ -6,12 +6,12 @@ type TScreenChangeEvent =
 	| "foregroundWindowUpdated";
 
 declare class ScreenTap {
-	startScreenChangeListener: () => void;
+	startScreenTapListener: () => void;
 	on: (
 		event: TScreenChangeEvent,
-		listener: (monitorId: number) => void
+		listener: (displayId: number) => void
 	) => void;
-	stopScreenChangeListener: () => void;
+	stopScreenTapListener: () => void;
 }
 
 export = ScreenTap;
