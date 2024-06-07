@@ -18,9 +18,9 @@ std::thread nativeThread;
 Napi::ThreadSafeFunction tsfn;
 std::atomic<bool> keepRunning(false);
 
-struct MouseData {
-  HMONITOR hMonitor;
-  std::string event;
+struct EventData {
+  HMONITOR displayId;
+  std::string eventName;
 };
 
 struct ThreadInfo {
@@ -29,12 +29,16 @@ struct ThreadInfo {
 
 ThreadInfo threadInfo;
 
-auto callback = [](Napi::Env env, Napi::Function jsCallback, MouseData *data) {
-  jsCallback.Call(
-      {Napi::String::New(env, data->event),
-       Napi::Number::New(env, static_cast<double>(reinterpret_cast<intptr_t>(
-                                  data->hMonitor)))});
-  delete data;
+auto callback = [](Napi::Env env, Napi::Function jsCallback,
+                   EventData *eventData) {
+  Napi::Object eventResult = Napi::Object::New(env);
+  eventResult.Set("eventName", Napi::String::New(env, eventData->eventName));
+  eventResult.Set(
+      "displayId",
+      Napi::Number::New(env, static_cast<double>(reinterpret_cast<intptr_t>(
+                                 eventData->displayId))));
+  jsCallback.Call({Napi::String::New(env, eventData->eventName), eventResult});
+  delete eventData;
 };
 
 // Function to get the monitor from the mouse coordinates
@@ -46,20 +50,20 @@ void CALLBACK win_event_proc(HWINEVENTHOOK hook, DWORD event, HWND hwnd,
                              LONG idObject, LONG idChild, DWORD dwEventThread,
                              DWORD dwmsEventTime) {
   if (event == EVENT_SYSTEM_FOREGROUND || event == EVENT_SYSTEM_MOVESIZEEND) {
-    MouseData *data = new MouseData();
-    data->event = FOREGROUND_WINDOW_UPDATED;
+    EventData *data = new EventData();
+    data->eventName = FOREGROUND_WINDOW_UPDATED;
     if (hwnd == NULL || !IsWindow(hwnd) || !IsWindowVisible(hwnd) ||
         !IsWindowEnabled(hwnd)) {
-      data->hMonitor = NULL;
+      data->displayId = NULL;
       POINT pt;
       if (GetCursorPos(&pt)) {
-        data->hMonitor = GetMonitorFromPoint(pt);
+        data->displayId = GetMonitorFromPoint(pt);
       }
     } else {
       RECT rect;
       if (GetWindowRect(hwnd, &rect)) {
         POINT pt = {rect.left, rect.top};
-        data->hMonitor = GetMonitorFromPoint(pt);
+        data->displayId = GetMonitorFromPoint(pt);
       }
     }
     tsfn.NonBlockingCall(data, callback);
@@ -77,20 +81,20 @@ LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam) {
     }
     PMSLLHOOKSTRUCT pMouseStruct = (PMSLLHOOKSTRUCT)lParam;
     HMONITOR hMonitor = GetMonitorFromPoint(pMouseStruct->pt);
-    MouseData *data = new MouseData();
-    data->hMonitor = hMonitor;
+    EventData *data = new EventData();
+    data->displayId = hMonitor;
     switch (wParam) {
     case WM_LBUTTONDOWN:
-      data->event = LEFT_MOUSEDOWN;
+      data->eventName = LEFT_MOUSEDOWN;
       break;
     case WM_LBUTTONUP:
-      data->event = LEFT_MOUSEUP;
+      data->eventName = LEFT_MOUSEUP;
       break;
     case WM_RBUTTONDOWN:
-      data->event = RIGHT_MOUSEDOWN;
+      data->eventName = RIGHT_MOUSEDOWN;
       break;
     case WM_RBUTTONUP:
-      data->event = RIGHT_MOUSEUP;
+      data->eventName = RIGHT_MOUSEUP;
       break;
     }
     tsfn.NonBlockingCall(data, callback);

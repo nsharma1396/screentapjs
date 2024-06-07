@@ -15,8 +15,12 @@ struct EventData {
 
 auto callback = [](Napi::Env env, Napi::Function jsCallback,
                    EventData *eventData) {
-  jsCallback.Call({Napi::String::New(env, *(eventData->eventName)),
-                   Napi::Number::New(env, eventData->displayId)});
+  Napi::Object eventResult = Napi::Object::New(env);
+  eventResult.Set("eventName", (*(eventData->eventName)));
+  eventResult.Set("displayId", eventData->displayId);
+  jsCallback.Call(
+      {Napi::String::New(env, *(eventData->eventName)), eventResult});
+  delete eventData->eventName;
   delete eventData;
 };
 
