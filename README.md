@@ -21,15 +21,27 @@ import ScreenTap from "screentap.js";
 
 const screenTap = new ScreenTap();
 
-screenTap.on("leftMouseDown", (event) => {
-	console.log("Left mouse button pressed", event);
+screenTap.on("foregroundWindowUpdated", ({ eventName, displayId }) => {
+	console.log("Foreground window updated ", displayId);
 });
-
-screenTap.on("foregroundWindowUpdated", (event) => {
-	console.log("Foreground window updated", event);
+screenTap.on("leftMouseDown", ({ eventName, displayId }) => {
+	console.log("Left mouse button down", displayId);
+});
+screenTap.on("leftMouseUp", ({ eventName, displayId }) => {
+	console.log("Left mouse button up", displayId);
+});
+screenTap.on("rightMouseDown", ({ eventName, displayId }) => {
+	console.log("Right mouse button down", displayId);
+});
+screenTap.on("rightMouseUp", ({ eventName, displayId }) => {
+	console.log("Right mouse button up", displayId);
 });
 
 screenTap.startScreenTapListener();
+
+setTimeout(() => {
+	screenTap.stopScreenTapListener();
+}, 10_000);
 ```
 
 ## API Reference
@@ -73,7 +85,7 @@ import ScreenTap from "screentap.js";
 const screenTap = new ScreenTap();
 
 screenTap.once("leftMouseDown", (event) => {
-	console.log("Left mouse button pressed", event);
+	console.log("Left mouse button down", event);
 });
 
 screenTap.startScreenTapListener();
@@ -81,9 +93,7 @@ screenTap.startScreenTapListener();
 
 in this example, the listener is automatically removed after it is called once, so it will only log the first leftMouseDown event.
 
-For more information about the EventEmitter API, see the [Node.js documentation](# ScreenTap.js
-
-ScreenTap.js is a Node.js addon library that allows you to detect mouse/tap events on the screen/display. It currently supports both macOS and Windows. The library triggers events that may lead to a screen change, such as mouse up/down events and foreground window changes/moves (currently only supported on Windows).
+For more information about the EventEmitter API, see the [Node.js documentation](https://nodejs.org/api/events.html)
 
 ## Installation
 
