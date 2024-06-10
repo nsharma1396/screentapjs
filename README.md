@@ -17,7 +17,7 @@ ScreenTap.js exports a `ScreenTap` class that extends `EventEmitter`. You can us
 Here's a basic example:
 
 ```javascript
-import ScreenTap from "screentap.js";
+import ScreenTap from "screentap";
 
 const screenTap = new ScreenTap();
 
@@ -87,7 +87,7 @@ Since `ScreenTap` extends `EventEmitter`, all the APIs of Node.js's `EventEmitte
 Here's an example of using the `once` method to listen for a single `leftMouseDown` event:
 
 ```javascript
-import ScreenTap from "screentap.js";
+import ScreenTap from "screentap";
 
 const screenTap = new ScreenTap();
 
