@@ -49,19 +49,23 @@ void handleMouseEvent(NSEvent *event) {
   NSPoint locationInWindow = [event locationInWindow];
   NSRect locationRectInWindow =
       NSMakeRect(locationInWindow.x, locationInWindow.y, 0, 0);
-  NSRect locationRectInScreen =
-      [[event window] convertRectToScreen:locationRectInWindow];
-  NSPoint locationInScreen = locationRectInScreen.origin;
-  CGDirectDisplayID display;
-  uint32_t matchingDisplayCount;
-  CGGetDisplaysWithPoint(locationInScreen, 1, &display, &matchingDisplayCount);
 
-  if (matchingDisplayCount > 0) {
+  // Convert the location to screen coordinates
+  NSPoint locationInScreen =
+      [event.window convertRectToScreen:locationRectInWindow].origin;
+
+  CGDirectDisplayID display;
+  uint32_t matchingDisplayCount = 0;
+
+  // Get the display that contains the point
+  CGError error = CGGetDisplaysWithPoint(locationInScreen, 1, &display,
+                                         &matchingDisplayCount);
+
+  if (error == kCGErrorSuccess && matchingDisplayCount > 0) {
     eventData->displayId = display;
   } else {
     eventData->displayId = 0;
   }
-  tsfn.NonBlockingCall(eventData, callback);
 }
 
 void startMouseMonitor(Napi::Env env, Napi::Function windowCallback) {
