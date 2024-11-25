@@ -78,7 +78,7 @@ This property is a string that indicates the type of the event that occurred. It
 
 #### `displayId: number`
 
-The display where the event occurred. If the display cannot be determined, the `displayId` will be 0.
+The display where the event occurred. If the display cannot be determined, the `displayId` will be -1.
 
 ### EventEmitter API
 
