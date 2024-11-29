@@ -26,7 +26,11 @@
               "sources/macos/mouseEventMonitor.mm",
               "sources/macos/mouseEventMonitor.h"
             ],
-            "libraries": ["-framework AppKit"]
+            "libraries": ["-framework AppKit"],
+            "xcode_settings": {
+              "ARCHS": ["x86_64", "arm64"],
+              "MACOSX_DEPLOYMENT_TARGET": "10.15"
+            }
           }
         ]
       ],
