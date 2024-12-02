@@ -8,17 +8,17 @@ on:
       - "releases/**"
 jobs:
   test:
-    name: Node.js ${{ matrix.node-version }} on ${{ matrix.arch }}
-    runs-on: macos-latest
+    name: Node.js ${{ matrix.node-version }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         node-version:
           - 18
           - 16
-        arch:
-          - x64
-          - arm64
+        os:
+          - macos-latest
+          - macos-latest-large
     steps:
       - uses: actions/checkout@v3
 
@@ -26,11 +26,13 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Setup node (node=${{ matrix.node-version }}, arch=${{ matrix.arch }})
+      - name: Setup node (node=${{ matrix.node-version }}, os=${{ matrix.os }})
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-          architecture: ${{ matrix.arch }}
+
+      - name: Get architecture
+        run: uname -m
 
       - name: Install dependencies
         run: npm install --ignore-scripts
@@ -39,7 +41,7 @@ jobs:
         shell: bash
         run: |
           echo "V=1" >> $GITHUB_ENV
-          echo "TARGET=${{ matrix.target }}" >> $GITHUB_ENV
+          echo "TARGET=$(uname -m)" >> $GITHUB_ENV
 
       - name: Install dependencies
         run: npm install --ignore-scripts
