@@ -75,6 +75,7 @@ jobs:
         os:
           - macos-latest
         host:
+          - x64
           - arm64
         target:
           - x64
