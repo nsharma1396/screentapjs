@@ -68,23 +68,18 @@ jobs:
           retention-days: 7
 
   build-darwin:
-    runs-on: ${{ matrix.os }}
+    runs-on: macos-latest
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - macos-latest
         host:
-          - x64
-          - arm64
-        target:
           - x64
           - arm64
         node:
           - 18
           - 16
 
-    name: ${{ matrix.os }} (node=${{ matrix.node }}, host=${{ matrix.host }}, target=${{ matrix.target }})
+    name: ${{ matrix.os }} (node=${{ matrix.node }}, host=${{ matrix.host }}, target=${{ matrix.host }})
     steps:
       - uses: actions/checkout@v3
 
@@ -105,7 +100,7 @@ jobs:
         shell: bash
         run: |
           echo "V=1" >> $GITHUB_ENV
-          echo "TARGET=${{ matrix.target }}" >> $GITHUB_ENV
+          echo "TARGET=${{ matrix.host }}" >> $GITHUB_ENV
 
       - name: Configure build
         run: ./node_modules/.bin/node-pre-gyp configure --target_arch=${{ env.TARGET }}
