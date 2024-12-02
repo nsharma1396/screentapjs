@@ -33,9 +33,7 @@
                 "-fobjc-arc",
                 "-std=c++17"
               ],
-              "MACOSX_DEPLOYMENT_TARGET": "11.0",
-              "VALID_ARCHS": ["x86_64", "arm64"],
-              "ARCHS": ["x86_64", "arm64"]
+              "MACOSX_DEPLOYMENT_TARGET": "10.15"
             }
           }
         ]
