@@ -8,7 +8,7 @@ on:
       - "releases/**"
 jobs:
   test:
-    name: Node.js ${{ matrix.node-version }}
+    name: Node.js ${{ matrix.node-version }} on ${{ matrix.arch }}
     runs-on: macos-latest
     strategy:
       fail-fast: false
@@ -16,20 +16,21 @@ jobs:
         node-version:
           - 18
           - 16
+        arch:
+          - x64
+          - arm64
     steps:
       - uses: actions/checkout@v3
-      # - uses: actions/setup-node@v3
-      #   with:
-      #     node-version: ${{ matrix.node-version }}
+
       - uses: actions/setup-python@v3
         with:
           python-version: "3.11"
 
-      - name: Setup node (node=${{ matrix.node }}, host=${{ matrix.host }})
+      - name: Setup node (node=${{ matrix.node-version }}, arch=${{ matrix.arch }})
         uses: actions/setup-node@v3
         with:
-          node-version: ${{ matrix.node }}
-          architecture: ${{ matrix.host }}
+          node-version: ${{ matrix.node-version }}
+          architecture: ${{ matrix.arch }}
 
       - name: Install dependencies
         run: npm install --ignore-scripts
