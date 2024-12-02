@@ -26,10 +26,16 @@
               "sources/macos/mouseEventMonitor.mm",
               "sources/macos/mouseEventMonitor.h"
             ],
-            "libraries": ["-framework AppKit"],
+            "libraries": ["-framework AppKit", "-framework CoreGraphics"],
             "xcode_settings": {
-              "ARCHS": ["x86_64", "arm64"],
-              "MACOSX_DEPLOYMENT_TARGET": "10.15"
+              "CLANG_ENABLE_OBJC_ARC": "YES",
+              "OTHER_CPLUSPLUSFLAGS": [
+                "-fobjc-arc",
+                "-std=c++17"
+              ],
+              "MACOSX_DEPLOYMENT_TARGET": "11.0",
+              "VALID_ARCHS": ["x86_64", "arm64"],
+              "ARCHS": ["x86_64", "arm64"]
             }
           }
         ]
